@@ -1,0 +1,29 @@
+group open-nti {
+    router-id _local_address_;
+    local-as 65000;
+    local-address _local_address_;
+    peer-as 65000;
+    capability {
+        route-refresh enable;
+    }
+    family {
+        ipv4 unicast;
+    }
+    process to-kafka {
+        run /usr/bin/python /data/kafka-export.py;
+        encoder json;
+        receive {
+            parsed;
+            update;
+            neighbor-changes;
+        }
+    }
+    process to-neighbor {
+        run /usr/bin/python /data/kafka-import.py --neighbor 1.1.1.1;
+        send {
+            packets;
+        }
+    }
+    neighbor 1.1.1.1 {
+    }
+}

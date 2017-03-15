@@ -1,0 +1,61 @@
+version: '2'
+services:
+   kafka:
+     image: spotify/kafka
+     container_name: kafka
+     environment:
+      - "ADVERTISED_PORT=9092"
+      - "ADVERTISED_HOST=kafka"
+     volumes:
+      - /etc/localtime:/etc/localtime
+     ports:
+      - "2181"
+      - "9092"
+
+   kafka-manager:
+     image: dockerkafka/kafka-manager
+#     build: kafka-manager
+     container_name: kafka-manager
+     environment:
+      - "ZK_HOSTS=kafka:2181"
+     volumes:
+      - /etc/localtime:/etc/localtime
+     ports:
+      - "9000:9000"
+
+   bgp:
+     build: bgp
+     container_name: bgp
+     environment:
+      - "KAFKA_ADDR=kafka"
+      - "KAFKA_PORT=9092"
+      - "BGP_KAFKA_TOPIC=jnpr.bgp"
+      - "OUTPUT_KAFKA=true"
+      - "OUTPUT_STDOUT=true"
+     volumes:
+      - /etc/localtime:/etc/localtime
+     ports:
+      - "179:179"
+
+   logstash:
+     build: logstash/
+     container_name: logstash
+     command: logstash -f /etc/logstash/conf.d/logstash.conf
+     volumes:
+       - /etc/localtime:/etc/localtime:ro 
+       - ./logstash/config:/etc/logstash/conf.d
+       - ./logstash/log:/opt/logstash/log
+     ports:
+       - "3056:2056/udp"
+
+   netflow-correlator:
+     build: netflow-correlator
+     container_name: netflow-correlator
+     environment:
+      - "KAFKA_ADDR=kafka"
+      - "KAFKA_PORT=9092"
+      - "BGP_KAFKA_TOPIC=jnpr.bgp"
+      - "NETFLOW_KAFKA_TOPIC=jnpr.netflow"
+      - "OUTPUT_KAFKA=true"
+     volumes:
+      - /etc/localtime:/etc/localtime
